@@ -8,6 +8,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.function.Supplier;
 
 /**
  * BasePage provides common setup for web pages in the automation framework.
@@ -48,6 +49,14 @@ public class BasePage {
         JavascriptExecutor javascriptExecutor = (JavascriptExecutor) getWebDriver();
         javascriptExecutor.executeScript("arguments[0].scrollIntoView(true);", webElement);
         wait(Duration.ofSeconds(1));
+    }
+
+    public boolean isElementPresent(Supplier<WebElement> webElementConsumer) {
+        try {
+            return webElementConsumer.get().isDisplayed();
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
     public WebDriver getWebDriver() {

@@ -19,7 +19,7 @@ public class InputDelegateService {
         if (inputServiceMap.containsKey(inputType.getServiceName())) {
             inputServiceMap.get(inputType.getServiceName()).setValue(webElement, value);
         } else {
-            // TODO: define exception to throw
+            throw new IllegalArgumentException("No input service found for: %s".formatted(inputType.getServiceName()));
         }
     }
 
