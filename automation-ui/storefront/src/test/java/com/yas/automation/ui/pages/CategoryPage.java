@@ -1,6 +1,6 @@
 package com.yas.automation.ui.pages;
 
-import static com.yas.automation.ui.ultil.WebElementUtil.getWebElementBy;
+import static com.yas.automation.ui.util.WebElementUtil.getWebElementBy;
 
 import com.yas.automation.ui.hook.WebDriverFactory;
 import org.openqa.selenium.WebElement;

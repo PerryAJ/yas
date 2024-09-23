@@ -1,6 +1,6 @@
 package com.yas.automation.ui.pages;
 
-import static com.yas.automation.ui.ultil.WebElementUtil.getWebElementBy;
+import static com.yas.automation.ui.util.WebElementUtil.getWebElementBy;
 
 import com.yas.automation.ui.hook.WebDriverFactory;
 import org.openqa.selenium.WebElement;
@@ -18,5 +18,10 @@ public class HomePage {
     public void clickLogin() {
         WebElement loginBtn = getWebElementBy(webDriverFactory.getChromeDriver(), How.LINK_TEXT, "Login");
         loginBtn.click();
+    }
+
+    public String getUsername() {
+        WebElement title = getWebElementBy(webDriverFactory.getChromeDriver(), How.ID, "user-dropdown");
+        return title.getText();
     }
 }
