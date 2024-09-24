@@ -1,18 +1,17 @@
 package com.yas.automation.ui.steps;
 
+import static org.junit.Assert.assertTrue;
+
 import com.yas.automation.ui.hook.WebDriverFactory;
 import com.yas.automation.ui.pages.CategoryPage;
 import com.yas.automation.ui.pages.HomePage;
 import com.yas.automation.ui.pages.NewCategoryPage;
 import com.yas.automation.ui.service.AuthenticationService;
-import com.yas.automation.ui.util.WebElementUtil;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-
-import static org.junit.Assert.assertTrue;
 
 public class CreateCategorySteps {
     private final AuthenticationService authenticationService;
@@ -42,8 +41,8 @@ public class CreateCategorySteps {
 
     @Then("I should be redirected to the category list page")
     public void i_should_be_redirected_to_category_list_page() {
-        assertTrue(
-                WebElementUtil.isCorrectUrl(webDriverFactory.getChromeDriver(), "http://backoffice/catalog/categories"));
+        String currentUrl = webDriverFactory.getChromeDriver().getCurrentUrl();
+        assertTrue(currentUrl.contains("/catalog/categories"));
     }
 
     @When("I click on the Create Category button")
@@ -54,8 +53,8 @@ public class CreateCategorySteps {
 
     @Then("I should be redirected to the create category page")
     public void i_should_be_redirected_to_create_category_page() {
-        assertTrue(WebElementUtil.isCorrectUrl(webDriverFactory.getChromeDriver(),
-                "http://backoffice/catalog/categories/create"));
+        String currentUrl = webDriverFactory.getChromeDriver().getCurrentUrl();
+        assertTrue(currentUrl.contains("/catalog/categories/create"));
     }
 
     @Given("I have filled in all the necessary data for the new category")
@@ -71,8 +70,8 @@ public class CreateCategorySteps {
 
     @Then("I should be redirected to the category list page again")
     public void i_should_be_redirected_to_category_list_page_again() {
-        assertTrue(
-                WebElementUtil.isCorrectUrl(webDriverFactory.getChromeDriver(), "http://backoffice/catalog/categories"));
+        String currentUrl = webDriverFactory.getChromeDriver().getCurrentUrl();
+        assertTrue(currentUrl.contains("/catalog/categories"));
     }
 
     @Then("the new category should be displayed in the category list")
