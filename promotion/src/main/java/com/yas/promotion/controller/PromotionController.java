@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,13 +35,8 @@ public class PromotionController {
             @RequestParam(defaultValue = "5") int pageSize,
             @RequestParam(defaultValue = "") String promotionName,
             @RequestParam(defaultValue = "") String couponCode,
-            @RequestParam(
-                defaultValue =
-                    "#{T(java.time.ZonedDateTime).of(1970, 1, 1, 0, 0, 0, 0, T(java.time.ZoneId).systemDefault())}"
-            )
-            ZonedDateTime startDate,
-            @RequestParam(defaultValue = "#{T(java.time.ZonedDateTime).now(T(java.time.ZoneId).systemDefault())}")
-            ZonedDateTime endDate
+            @RequestParam(required = false) Instant startDate,
+            @RequestParam(required = false) Instant endDate
     ) {
         return ResponseEntity.ok(promotionService.getPromotions(
             pageNo, pageSize, promotionName, couponCode, startDate, endDate));
@@ -101,5 +96,11 @@ public class PromotionController {
     public ResponseEntity<Void> deletePromotion(@PathVariable("promotionId") Long promotionId) {
         promotionService.deletePromotion(promotionId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/backoffice/promotions/{promotionId}")
+    public ResponseEntity<PromotionDetailVm> getPromotion(@PathVariable("promotionId") Long promotionId) {
+        PromotionDetailVm promotionDetailVm = promotionService.getPromotion(promotionId);
+        return new ResponseEntity<>(promotionDetailVm, HttpStatus.OK);
     }
 }

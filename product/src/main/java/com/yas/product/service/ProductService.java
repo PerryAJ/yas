@@ -1,9 +1,9 @@
 package com.yas.product.service;
 
-import com.yas.product.exception.BadRequestException;
-import com.yas.product.exception.DuplicatedException;
-import com.yas.product.exception.InternalServerErrorException;
-import com.yas.product.exception.NotFoundException;
+import com.yas.commonlibrary.exception.BadRequestException;
+import com.yas.commonlibrary.exception.DuplicatedException;
+import com.yas.commonlibrary.exception.InternalServerErrorException;
+import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.product.model.Brand;
 import com.yas.product.model.Category;
 import com.yas.product.model.Product;
@@ -509,7 +509,7 @@ public class ProductService {
         }
     }
 
-    private static void setValuesForVariantExisting(
+    private void setValuesForVariantExisting(
         List<ProductImage> newProductImages,
         ProductVariationPutVm variant,
         Product variantInDb
@@ -521,15 +521,14 @@ public class ProductService {
             variantInDb.setSku(variant.sku());
             variantInDb.setGtin(variant.gtin());
             variantInDb.setPrice(variant.price());
-            List<ProductImage> productImages = variantInDb.getProductImages();
+            productImageRepository.deleteByProductId(variant.id());
             if (CollectionUtils.isNotEmpty(variant.productImageIds())) {
                 variant.productImageIds().forEach(imageId -> {
-                    if (productImages.stream().noneMatch(productImage -> imageId.equals(productImage.getImageId()))) {
-                        newProductImages.add(ProductImage.builder()
-                            .imageId(imageId).product(variantInDb).build());
-                    }
+                    newProductImages.add(ProductImage.builder()
+                        .imageId(imageId).product(variantInDb).build());
                 });
             }
+            productImageRepository.saveAll(newProductImages);
         }
     }
 
@@ -874,6 +873,11 @@ public class ProductService {
                         productOptionCombination -> productOptionCombination.getProductOption().getId(),
                         ProductOptionCombination::getValue
                 ));
+                ImageVm image = null;
+                if (product.getThumbnailMediaId() != null) {
+                    image = new ImageVm(product.getThumbnailMediaId(),
+                        mediaService.getMedia(product.getThumbnailMediaId()).url());
+                }
                 return new ProductVariationGetVm(
                         product.getId(),
                         product.getName(),
@@ -881,8 +885,7 @@ public class ProductService {
                         product.getSku(),
                         product.getGtin(),
                         product.getPrice(),
-                        new ImageVm(product.getThumbnailMediaId(),
-                            mediaService.getMedia(product.getThumbnailMediaId()).url()),
+                        image,
                         product.getProductImages().stream()
                             .map(productImage -> new ImageVm(productImage.getImageId(),
                                 mediaService.getMedia(productImage.getImageId()).url())).toList(),
@@ -1068,6 +1071,10 @@ public class ProductService {
             long result = totalQuantity - amount;
             return result < 0 ? 0 : result;
         };
+    }
+
+    public List<ProductListVm> getProductByIds(List<Long> productIds) {
+        return this.productRepository.findAllByIdIn(productIds).stream().map(ProductListVm::fromModel).toList();
     }
 
     public void restoreStockQuantity(List<ProductQuantityPutVm> productQuantityItems) {
