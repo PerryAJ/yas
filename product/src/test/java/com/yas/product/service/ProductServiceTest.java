@@ -1,14 +1,29 @@
 package com.yas.product.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.product.ProductApplication;
 import com.yas.product.model.Brand;
 import com.yas.product.model.Category;
 import com.yas.product.model.Product;
 import com.yas.product.model.ProductCategory;
+import com.yas.product.model.ProductOption;
+import com.yas.product.model.ProductOptionCombination;
+import com.yas.product.model.ProductOptionValue;
 import com.yas.product.repository.BrandRepository;
 import com.yas.product.repository.CategoryRepository;
 import com.yas.product.repository.ProductCategoryRepository;
+import com.yas.product.repository.ProductOptionCombinationRepository;
+import com.yas.product.repository.ProductOptionRepository;
+import com.yas.product.repository.ProductOptionValueRepository;
 import com.yas.product.repository.ProductRepository;
 import com.yas.product.viewmodel.NoFileMediaVm;
 import com.yas.product.viewmodel.product.ProductFeatureGetVm;
@@ -17,6 +32,12 @@ import com.yas.product.viewmodel.product.ProductListGetVm;
 import com.yas.product.viewmodel.product.ProductThumbnailGetVm;
 import com.yas.product.viewmodel.product.ProductThumbnailVm;
 import com.yas.product.viewmodel.product.ProductsGetVm;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,21 +45,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = ProductApplication.class)
 class ProductServiceTest {
@@ -51,6 +57,12 @@ class ProductServiceTest {
     private CategoryRepository categoryRepository;
     @Autowired
     private ProductCategoryRepository productCategoryRepository;
+    @Autowired
+    private ProductOptionCombinationRepository productOptionCombinationRepository;
+    @Autowired
+    private ProductOptionValueRepository productOptionValueRepository;
+    @Autowired
+    private ProductOptionRepository productOptionRepository;
     @MockBean
     private MediaService mediaService;
     @Autowired
@@ -117,13 +129,13 @@ class ProductServiceTest {
             product.setCreatedOn(CREATED_ON);
             products.add(product);
         }
-        List<Product> productsDB = productRepository.saveAll(products);
+        List<Product> productsDb = productRepository.saveAll(products);
 
         productCategoryList = new ArrayList<>();
-        for (int i = 1; i <= productsDB.size(); i++) {
-            Product productDB = productsDB.get(i - 1);
+        for (int i = 1; i <= productsDb.size(); i++) {
+            Product productDb = productsDb.get(i - 1);
             ProductCategory productCategory = new ProductCategory();
-            productCategory.setProduct(productDB);
+            productCategory.setProduct(productDb);
             if (i % 2 == 0) {
                 productCategory.setCategory(category2);
             } else {
@@ -134,8 +146,26 @@ class ProductServiceTest {
         productCategoryRepository.saveAll(productCategoryList);
     }
 
+    private Product getVariant(Product parent) {
+        return Product.builder()
+            .name("product variant name")
+            .slug("product variant slug")
+            .isAllowedToOrder(true)
+            .isPublished(true)
+            .isFeatured(true)
+            .isVisibleIndividually(true)
+            .stockTrackingEnabled(true)
+            .thumbnailMediaId(1L)
+            .taxClassId(1L)
+            .parent(parent)
+            .build();
+    }
+
     @AfterEach
     void tearDown() {
+        productOptionCombinationRepository.deleteAll();
+        productOptionValueRepository.deleteAll();
+        productOptionRepository.deleteAll();
         productCategoryRepository.deleteAll();
         categoryRepository.deleteAll();
         productRepository.deleteAll();
@@ -148,8 +178,9 @@ class ProductServiceTest {
         generateTestData();
         ProductFeatureGetVm actualResponse = productService.getListFeaturedProducts(pageNo, pageSize);
         assertThat(actualResponse.totalPage()).isEqualTo(totalPage);
-        assertThat(actualResponse.productList().size()).isEqualTo(5);
-        Map<String, Product> productMap = products.stream().collect(Collectors.toMap(Product::getSlug, product -> product));
+        assertThat(actualResponse.productList()).hasSize(5);
+        Map<String, Product> productMap
+            = products.stream().collect(Collectors.toMap(Product::getSlug, product -> product));
         for (int i = 0; i < actualResponse.productList().size(); i++) {
             ProductThumbnailGetVm productThumbnailGetVm = actualResponse.productList().get(i);
             Product product = productMap.get(productThumbnailGetVm.slug());
@@ -169,7 +200,8 @@ class ProductServiceTest {
     @DisplayName("Get products by brand when brand is non exist then throws exception")
     @Test
     void getProductsByBrand_BrandIsNonExist_ThrowsNotFoundException() {
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> productService.getProductsByBrand("brandSlug1"));
+        NotFoundException exception = assertThrows(NotFoundException.class,
+            () -> productService.getProductsByBrand("brandSlug1"));
         assertEquals(String.format("Brand %s is not found", "brandSlug1"), exception.getMessage());
     }
 
@@ -198,7 +230,8 @@ class ProductServiceTest {
     @Test
     void getProductsWithFilter_WhenFilterByBrandNameAndProductName_ThenSuccess() {
         generateTestData();
-        ProductListGetVm actualResponse = productService.getProductsWithFilter(pageNo, pageSize, "product1", brand1.getName());
+        ProductListGetVm actualResponse
+            = productService.getProductsWithFilter(pageNo, pageSize, "product1", brand1.getName());
         assertEquals(1, actualResponse.productContent().size());
     }
 
@@ -240,7 +273,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void deleteProduct_givenProductIdValid_thenSuccess() {
+    void deleteProduct_givenParentProduct_thenSuccess() {
         generateTestData();
         Long id = productRepository.findAll().getFirst().getId();
         productService.deleteProduct(id);
@@ -248,6 +281,49 @@ class ProductServiceTest {
         // Soft delete, set published to false
         assertTrue(result.isPresent());
         assertFalse(result.get().isPublished());
+
+    }
+
+    @Test
+    void deleteProduct_givenVariant_thenSuccess() {
+
+        generateTestData();
+
+        String value = "red";
+        ProductOption productOption = new ProductOption();
+        productOption.setName(value);
+        productOption.setCreatedOn(CREATED_ON);
+        ProductOption afterProductOption = productOptionRepository.save(productOption);
+
+        ProductOptionCombination productOptionCombination = new ProductOptionCombination();
+        productOptionCombination.setValue(value);
+        productOptionCombination.setDisplayOrder(1);
+
+        Product parent = productRepository.findAll().getFirst();
+        Product product = getVariant(parent);
+        Product afterProduct = productRepository.save(product);
+
+        productOptionCombination.setProduct(afterProduct);
+        productOptionCombination.setProductOption(afterProductOption);
+        ProductOptionCombination productOptionCombinationSaved
+            = productOptionCombinationRepository.save(productOptionCombination);
+        assertTrue(productOptionCombinationRepository.findById(productOptionCombinationSaved.getId()).isPresent());
+
+        ProductOptionValue productOptionValue = new ProductOptionValue();
+        productOptionValue.setProduct(parent);
+        productOptionValue.setValue(value);
+        productOptionValue.setDisplayOrder(1);
+        productOptionValue.setProductOption(afterProductOption);
+        ProductOptionValue productOptionValueSaved = productOptionValueRepository.save(productOptionValue);
+        assertTrue(productOptionValueRepository.findById(productOptionValueSaved.getId()).isPresent());
+
+        productService.deleteProduct(afterProduct.getId());
+        Optional<Product> result = productRepository.findById(afterProduct.getId());
+
+        assertTrue(result.isPresent());
+        assertFalse(result.get().isPublished());
+        assertFalse(productOptionCombinationRepository.findById(productOptionCombinationSaved.getId()).isPresent());
+        assertFalse(productOptionValueRepository.findById(productOptionValueSaved.getId()).isPresent());
 
     }
 
