@@ -77,6 +77,7 @@ public class CartService {
      * @param cartItemVms the list of {@link CartItemVm} objects representing the cart items to be added or updated.
      * @return the {@link CartGetDetailVm} object containing the updated cart details.
      */
+    @Transactional
     public CartGetDetailVm addToCart(List<CartItemVm> cartItemVms) {
         // Call API to check all products will be added to cart are existed
         List<Long> productIds = cartItemVms.stream().map(CartItemVm::productId).toList();
