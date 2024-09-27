@@ -1,0 +1,8 @@
+services:
+  zookeeper:
+    platform: linux/amd64
+  kafka-connect:
+    platform: linux/amd64
+  prometheus:
+    # With their original v2.42.0 tag, I was getting exit code 139
+    image: prom/prometheus:v2.54.1

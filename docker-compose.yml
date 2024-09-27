@@ -13,6 +13,7 @@ services:
       - yas-network
   identity:
     image: quay.io/keycloak/keycloak:21.0.2
+    platform: linux/amd64
     command: [ 'start-dev --import-realm' ]
     environment:
       KEYCLOAK_ADMIN: admin
@@ -499,6 +500,7 @@ services:
       - yas-network
   swagger-ui:
     image: swaggerapi/swagger-ui:v4.16.0
+    platform: linux/amd64
     environment:
     - BASE_URL=/swagger-ui
     - URLS
@@ -542,6 +544,7 @@ services:
       - yas-network
   kafka:
     image: confluentinc/cp-kafka:7.0.9
+    platform: linux/amd64
     hostname: ${KAFKA_SERVICE_HOST}
     depends_on:
       - zookeeper
@@ -559,6 +562,7 @@ services:
       - yas-network
   kafka-connect:
     image: debezium/connect:2.2
+    platform: linux/amd64
     restart: always
     ports:
       - 8083:8083
